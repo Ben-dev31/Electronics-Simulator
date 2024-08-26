@@ -1,0 +1,33 @@
+.bnt {
+    width: 90px;
+    height: 30px;
+    margin-top: 5px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+    margin-left: 5px;
+    border-left-color: rgb(231, 25, 56);
+    border-right-color: rgb(231, 25, 56);
+    border-top-color: rgb(231, 25, 56);
+    border-bottom-color: rgb(231, 25, 56);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    -unity-font-style: bold;
+    color: rgb(28, 217, 171);
+    -unity-text-align: middle-center;
+    background-color: rgb(70, 66, 64);
+    transition-duration: 0.2s;
+}
+
+.bnt:hover {
+    border-left-color: rgba(52, 82, 79, 0);
+    border-right-color: rgba(52, 82, 79, 0);
+    border-top-color: rgba(52, 82, 79, 0);
+    border-bottom-color: rgba(52, 82, 79, 0);
+    scale: 0.9 1;
+}
+
+.bnt:active {
+    background-color: rgba(204, 77, 18, 0.95);
+}
