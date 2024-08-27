@@ -27,7 +27,7 @@ public class resistor : MonoBehaviour
         cc = gameObject.GetComponent<CircuitComponent>();
         cc.Type = Type;
 
-        cc.Value = Resistance;
+        cc.Resistance = Resistance;
     }
 
   

@@ -19,6 +19,7 @@ public class switchBehaviour : MonoBehaviour
         cc.Type = "Switch";
         cc.Current = 0f;
         cc.Voltage = 0f;
+        cc.Resistance = 0f;
     }
 
 

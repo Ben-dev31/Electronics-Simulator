@@ -21,6 +21,7 @@ public class bulbBehaviour : MonoBehaviour
         this.cc.Type = "Bulb";
         this.cc.Current = 0f;
         this.cc.Voltage = 0f;
+        this.cc.Resistance = 2f;
     }
 
     // Update is called once per frame
@@ -38,8 +39,8 @@ public class bulbBehaviour : MonoBehaviour
         {
             lighting = false;
             MM.RemoveMaterial(lightComponent);
-            this.cc.Current = 0f;
-            this.cc.Voltage = 0f;
+            // this.cc.Current = 0f;
+            // this.cc.Voltage = 0f;
         }
     }
 }

@@ -227,10 +227,10 @@ public class Circuit : MonoBehaviour
 
         // print($"loop:: {loopComponents.Count}");
         // print($"loop counter : {loopCounter}");
-        // foreach (var item in loopComponents)
-        // {
-        //     print($"loop el:: {item.Count}");
-        // }
+        foreach (var item in loopComponents)
+        {
+            print($"loop el:: {item.Count}");
+        }
         // print($"===============");
 
         return loopComponents;
@@ -252,25 +252,26 @@ public class Circuit : MonoBehaviour
 
         var loopEquations = GenerateLoopEquations();
 
-        var allEquations = new List<Equation>(nodeEquations);
-        allEquations.AddRange(loopEquations);
+        // var allEquations = new List<Equation>(nodeEquations);
+        // allEquations.AddRange(loopEquations);
         // print(allEquations.Count);
-        var solutions = SolveEquations(allEquations);
-        UpdateComponentValues(solutions);
+        var solutions = SolveEquations(loopEquations);
+        UpdateComponentVoltage(solutions);
     }
 
     void UpdateComponentCurrentValues()
     {
         List<List<CircuitComponent>> loops = DetectLoops2();
-
+       
         CircuitComponent mainComponent = FindObjectsOfType<generator>()[0].GetComponent<CircuitComponent>();
 
         foreach (var loop in loops)
         {
             foreach (CircuitComponent component in loop)
             {
-                if(component.Id != 0)
+                if(!(component.Id == 0))
                 {
+                    component.Value = 1f;
                     component.Current = mainComponent.Current;
                 }
             }
@@ -317,7 +318,6 @@ public class Circuit : MonoBehaviour
             for (int i = 0; i < loop.Count - 1; i++)
             {
                 CircuitComponent component = loop[i];
-                CircuitComponent nextcp = loop[i + 1];
                 float voltage = component.Voltage;
                 equation.AddTerm(component.Id, component.Type == "Battery" ? voltage : -component.Current*component.Resistance);
             }
@@ -332,11 +332,72 @@ public class Circuit : MonoBehaviour
         // Implémention de la méthode de résolution des équations ici
         // Par exemple, utilisz la méthode de Gauss-Seidel
         var solutions = new Dictionary<int, float>();
+
+        foreach (Equation item in equations)
+        {
+           
+
+            Dictionary<int, float> solution = new Dictionary<int, float>();
+            Dictionary<int, float> terms = item.GetTerms();
+            print($"terms : {terms.Count}");
+
+            float equalTo = item.GetEqualTo();
+
+            float initialValtage = 0f;
+            int unk = 0;
+
+            foreach(CircuitComponent component in Components.Values)
+            {
+                if(component.Id == 0)
+                {
+                    initialValtage = component.Voltage;
+                }
+                else if(component.Resistance == 0)
+                {
+                    solution[component.Id] = 0;
+                    unk++;
+                }
+                else
+                {
+                    solution.Add(component.Id, terms[component.Id]);
+                }
+            }
+
+            // correction  de la resolution
+            float sum = 0;
+
+            for(int j = 0; j < solution.Count; j++)
+            {
+                sum += solution[j];
+            }
+
+            if(sum == equalTo)
+            {
+                return solution;
+            } 
+            else
+            {
+                for(int k = 0; k < solution.Count; k++)
+                {
+                    if(solution[k] == 0)
+                    {
+                        solution[k] = (sum - equalTo)/unk;
+                    }
+                }
+
+            }
+            
+            for(int key = 0; key < solution.Count; key++)
+            {
+                solutions[key] = solution[key];
+            }
+        }
         
+        print($"solutions : {solutions.Count}");
         return solutions;
     }
 
-    private void UpdateComponentValues(Dictionary<int, float> solutions)
+    private void UpdateComponentVoltage(Dictionary<int, float> solutions)
     {
         foreach (var component in Components.Values)
         {
@@ -345,7 +406,7 @@ public class Circuit : MonoBehaviour
                 // Mettre à jour les valeurs de courant et de tension du composant
                 
                 component.Voltage = solutions[component.Id]; // component.Value; // Exemple simplifié
-                component.Value = componentValue;
+                // component.Value = componentValue;
             }
         }
     }
@@ -374,6 +435,7 @@ public class Equation
         }
     }
 
+    
     public void SetEqualTo(float value)
     {
         equalTo = value;
@@ -388,4 +450,6 @@ public class Equation
     {
         return equalTo;
     }
+
+   
 }

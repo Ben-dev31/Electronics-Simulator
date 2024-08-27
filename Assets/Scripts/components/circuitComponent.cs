@@ -10,7 +10,7 @@ public class CircuitComponent : MonoBehaviour
     
     public string Type;         // ex. "Resistance", "Battery"
     public float Value = 1f;
-    public float Resistance = 1f;     // ex. valeur de la résistance
+    public float Resistance = 0f;     // ex. valeur de la résistance
     public float Current = 0f;
     public float Voltage = 0f;
 
