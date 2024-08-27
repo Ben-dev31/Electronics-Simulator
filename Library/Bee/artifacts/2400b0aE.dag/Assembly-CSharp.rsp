@@ -335,6 +335,7 @@
 "Assets/Scripts/components/circuitComponent.cs"
 "Assets/Scripts/components/circuitManager.cs"
 "Assets/Scripts/components/connector.cs"
+"Assets/Scripts/components/currentManager.cs"
 "Assets/Scripts/components/dragable.cs"
 "Assets/Scripts/components/generator.cs"
 "Assets/Scripts/components/materialmanager.cs"

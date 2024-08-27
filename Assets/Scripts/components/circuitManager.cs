@@ -47,7 +47,7 @@ public class Circuit : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"Invalid connection for component {component.Id}");
+            Debug.LogWarning($"Invalid connection for component {component.gameObject.name}");
         }
     }
 
@@ -111,8 +111,10 @@ public class Circuit : MonoBehaviour
                 nodeMap[component.bn.nodeId].ConnectedComponents.Add(component);
             }
             
-            
         }
+
+        
+
         return detectedNodes;
     }
 
@@ -152,13 +154,13 @@ public class Circuit : MonoBehaviour
         return loops;
     }
 
-    public void DetectLoops2()
+    public List<List<CircuitComponent>> DetectLoops2()
     {
         HashSet<Node> visitedNodes = new HashSet<Node>();  // Pour suivre les nœuds visités
         List<List<CircuitComponent>> loopComponents = new List<List<CircuitComponent>>();
         int loopCounter = 0;
 
-        if (Components.Count < 2) return;
+        if (Components.Count < 2) return loopComponents; 
 
         List<Node> nodes = DetectNodes();
         print($"Nodes: {nodes.Count}");
@@ -167,13 +169,15 @@ public class Circuit : MonoBehaviour
         if (initialComponent == null)
         {
             print("component 0 is null");
-            return;
+            return loopComponents;
         }
 
         Borne initialBorne = initialComponent.bp;
 
         void Dfss(Borne startBorne, CircuitComponent startComponent, List<CircuitComponent> currentLoop)
         {
+            // print($"{startComponent.gameObject.name}");
+
             if (currentLoop.Contains(startComponent))
             {
                 // Si nous revisitons le même composant, une boucle est détectée
@@ -186,14 +190,17 @@ public class Circuit : MonoBehaviour
             }
 
             currentLoop.Add(startComponent);
+            // print($"{currentLoop.Count}");
 
-            Borne nextBorne = startComponent.bp.cable.GetOtherBorne(startComponent.bp);
+            Borne nextBorne = startBorne.cable.GetOtherBorne(startBorne);
             if (nextBorne == null) return;
 
             CircuitComponent nextComponent = nextBorne.Parent.GetComponent<CircuitComponent>();
             if (nextComponent == null) return;
 
-            Dfss(startBorne, nextComponent, currentLoop);
+            nextBorne = nextComponent.GetOtherBorne(nextBorne);
+
+            Dfss(nextBorne, nextComponent, currentLoop);
             
             if(currentLoop.Count > 0)
             {
@@ -218,13 +225,15 @@ public class Circuit : MonoBehaviour
             }
         }
 
-        print($"loop:: {loopComponents.Count}");
-        print($"loop counter : {loopCounter}");
-        foreach (var item in loopComponents)
-        {
-            print($"loop el:: {item.Count}");
-        }
-        print($"===============");
+        // print($"loop:: {loopComponents.Count}");
+        // print($"loop counter : {loopCounter}");
+        // foreach (var item in loopComponents)
+        // {
+        //     print($"loop el:: {item.Count}");
+        // }
+        // print($"===============");
+
+        return loopComponents;
     }
 
     private bool ValidateConnections(CircuitComponent component)
@@ -232,12 +241,17 @@ public class Circuit : MonoBehaviour
         return component.TrueConnection();
     }
 
+    // calcul des grandeurs 
     public void CalculateCurrentsAndVoltages()
     {
         InitializeCircuit();
         // DetectNodes();
-        var nodeEquations = GenerateNodeEquations();
+        // var nodeEquations = GenerateNodeEquations();
+
+        UpdateComponentCurrentValues();
+
         var loopEquations = GenerateLoopEquations();
+
         var allEquations = new List<Equation>(nodeEquations);
         allEquations.AddRange(loopEquations);
         // print(allEquations.Count);
@@ -245,8 +259,30 @@ public class Circuit : MonoBehaviour
         UpdateComponentValues(solutions);
     }
 
+    void UpdateComponentCurrentValues()
+    {
+        List<List<CircuitComponent>> loops = DetectLoops2();
+
+        CircuitComponent mainComponent = FindObjectsOfType<generator>()[0].GetComponent<CircuitComponent>();
+
+        foreach (var loop in loops)
+        {
+            foreach (CircuitComponent component in loop)
+            {
+                if(component.Id != 0)
+                {
+                    component.Current = mainComponent.Current;
+                }
+            }
+        }
+
+    }
+
     private List<Equation> GenerateNodeEquations()
     {
+        List<Node> nodes = DetectNodes();
+        print($"Nodes: {nodes.Count}");
+
         var equations = new List<Equation>();
         foreach (var node in Nodes.Values)
         {
@@ -273,19 +309,17 @@ public class Circuit : MonoBehaviour
     private List<Equation> GenerateLoopEquations()
     {
         var equations = new List<Equation>();
-        var loops = DetectLoops();
-        DetectLoops2();
-        // print(loops.Count);
+        List<List<CircuitComponent>> loops = DetectLoops2();
+        
         foreach (var loop in loops)
         {
             var equation = new Equation();
             for (int i = 0; i < loop.Count - 1; i++)
             {
-                var node = loop[i];
-                var nextNode = loop[i + 1];
-                var component = node.ConnectedComponents.Find(c => c.GetOtherNode(node) == nextNode);
-                var voltage = component.Value;
-                equation.AddTerm(component.Id, component.Type == "Battery" ? voltage : -voltage);
+                CircuitComponent component = loop[i];
+                CircuitComponent nextcp = loop[i + 1];
+                float voltage = component.Voltage;
+                equation.AddTerm(component.Id, component.Type == "Battery" ? voltage : -component.Current*component.Resistance);
             }
             equation.SetEqualTo(0);
             equations.Add(equation);
@@ -298,11 +332,7 @@ public class Circuit : MonoBehaviour
         // Implémention de la méthode de résolution des équations ici
         // Par exemple, utilisz la méthode de Gauss-Seidel
         var solutions = new Dictionary<int, float>();
-        // ...
-        solutions[0] = 3.6f;
-        solutions[1] = 3.6f;
-        solutions[2] = 3.6f;
-        solutions[3] = 3.6f;
+        
         return solutions;
     }
 
@@ -313,7 +343,7 @@ public class Circuit : MonoBehaviour
             if (solutions.ContainsKey(component.Id))
             {
                 // Mettre à jour les valeurs de courant et de tension du composant
-                component.Current = solutions[component.Id];
+                
                 component.Voltage = solutions[component.Id]; // component.Value; // Exemple simplifié
                 component.Value = componentValue;
             }
@@ -321,6 +351,11 @@ public class Circuit : MonoBehaviour
     }
 
 }
+
+
+
+
+
 
 public class Equation
 {

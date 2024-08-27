@@ -9,7 +9,8 @@ public class CircuitComponent : MonoBehaviour
     public int Id;
     
     public string Type;         // ex. "Resistance", "Battery"
-    public float Value = 1f;     // ex. valeur de la résistance
+    public float Value = 1f;
+    public float Resistance = 1f;     // ex. valeur de la résistance
     public float Current = 0f;
     public float Voltage = 0f;
 
@@ -22,6 +23,7 @@ public class CircuitComponent : MonoBehaviour
 
     public Borne bp;
     public Borne bn;
+    public int currentDirection = 0;
 
     void Start()
     {
