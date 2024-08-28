@@ -27,7 +27,7 @@ public class bulbBehaviour : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(this.cc.Value != 0 && this.cc.Voltage >= minVoltage && this.cc.Voltage <= maxVoltage ) //
+        if(this.cc.Voltage != 0f && this.cc.Current != 0f ) //
         {
             if(!lighting)
             {

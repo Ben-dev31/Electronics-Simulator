@@ -9,13 +9,33 @@ public class generator : MonoBehaviour
 
     private float internalResistance = 1.5f;
 
+    public int oriantation = 1;
+
+    CircuitComponent cc;
 
     void Start()
     {
-        CircuitComponent cc = gameObject.GetComponent<CircuitComponent>();
+        cc = gameObject.GetComponent<CircuitComponent>();
 
         cc.Voltage = Value;
         cc.Current = Value / internalResistance;
+
+        UpdateOrientation();
+    }
+
+    public void UpdateOrientation(int ort = 1)
+    {
+        oriantation = ort;
+        if(oriantation == 1)
+        {
+            cc.pos = cc.bp;
+            cc.neg = cc.bn;
+        }
+        else
+        {
+            cc.pos = cc.bn;
+            cc.neg = cc.bp;
+        }
     }
 
 }

@@ -340,6 +340,7 @@
 "Assets/Scripts/components/generator.cs"
 "Assets/Scripts/components/materialmanager.cs"
 "Assets/Scripts/components/node.cs"
+"Assets/Scripts/components/nodeConnection.cs"
 "Assets/Scripts/components/resistor.cs"
 "Assets/Scripts/components/switchBehaviour.cs"
 "Assets/Scripts/components/wire.cs"

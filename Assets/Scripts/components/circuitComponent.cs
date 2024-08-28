@@ -23,6 +23,10 @@ public class CircuitComponent : MonoBehaviour
 
     public Borne bp;
     public Borne bn;
+
+    public Borne pos;
+    public Borne neg;
+    
     public int currentDirection = 0;
 
     void Start()

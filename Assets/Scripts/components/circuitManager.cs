@@ -227,10 +227,10 @@ public class Circuit : MonoBehaviour
 
         // print($"loop:: {loopComponents.Count}");
         // print($"loop counter : {loopCounter}");
-        foreach (var item in loopComponents)
-        {
-            print($"loop el:: {item.Count}");
-        }
+        // foreach (var item in loopComponents)
+        // {
+        //     print($"loop el:: {item.Count}");
+        // }
         // print($"===============");
 
         return loopComponents;
@@ -248,23 +248,22 @@ public class Circuit : MonoBehaviour
         // DetectNodes();
         // var nodeEquations = GenerateNodeEquations();
 
-        UpdateComponentCurrentValues();
 
         var loopEquations = GenerateLoopEquations();
 
         // var allEquations = new List<Equation>(nodeEquations);
         // allEquations.AddRange(loopEquations);
         // print(allEquations.Count);
-        var solutions = SolveEquations(loopEquations);
+        var solutions = SolveVoltageEquations(loopEquations);
         UpdateComponentVoltage(solutions);
+
+        UpdateComponentCurrentValues();
     }
 
     void UpdateComponentCurrentValues()
     {
         List<List<CircuitComponent>> loops = DetectLoops2();
        
-        CircuitComponent mainComponent = FindObjectsOfType<generator>()[0].GetComponent<CircuitComponent>();
-
         foreach (var loop in loops)
         {
             foreach (CircuitComponent component in loop)
@@ -272,7 +271,7 @@ public class Circuit : MonoBehaviour
                 if(!(component.Id == 0))
                 {
                     component.Value = 1f;
-                    component.Current = mainComponent.Current;
+                    component.Current = component.Voltage / component.Resistance;
                 }
             }
         }
@@ -282,7 +281,7 @@ public class Circuit : MonoBehaviour
     private List<Equation> GenerateNodeEquations()
     {
         List<Node> nodes = DetectNodes();
-        print($"Nodes: {nodes.Count}");
+        // print($"Nodes: {nodes.Count}");
 
         var equations = new List<Equation>();
         foreach (var node in Nodes.Values)
@@ -314,20 +313,22 @@ public class Circuit : MonoBehaviour
         
         foreach (var loop in loops)
         {
+            
             var equation = new Equation();
-            for (int i = 0; i < loop.Count - 1; i++)
+            foreach(CircuitComponent component in loop)
             {
-                CircuitComponent component = loop[i];
+                
                 float voltage = component.Voltage;
-                equation.AddTerm(component.Id, component.Type == "Battery" ? voltage : -component.Current*component.Resistance);
+                equation.AddTerm(component.Id, component.Type == "Battery" ? voltage : -voltage);
             }
             equation.SetEqualTo(0);
             equations.Add(equation);
+
         }
         return equations;
     }
 
-    private Dictionary<int, float> SolveEquations(List<Equation> equations)
+    private Dictionary<int, float> SolveVoltageEquations(List<Equation> equations)
     {
         // Implémention de la méthode de résolution des équations ici
         // Par exemple, utilisz la méthode de Gauss-Seidel
@@ -335,9 +336,6 @@ public class Circuit : MonoBehaviour
 
         foreach (Equation item in equations)
         {
-           
-
-            Dictionary<int, float> solution = new Dictionary<int, float>();
             Dictionary<int, float> terms = item.GetTerms();
             print($"terms : {terms.Count}");
 
@@ -345,55 +343,40 @@ public class Circuit : MonoBehaviour
 
             float initialValtage = 0f;
             int unk = 0;
+            int initialId = -25;
 
-            foreach(CircuitComponent component in Components.Values)
+            float EquivResistance = 0f;
+
+            foreach (int key in terms.Keys)
             {
-                if(component.Id == 0)
-                {
-                    initialValtage = component.Voltage;
-                }
-                else if(component.Resistance == 0)
-                {
-                    solution[component.Id] = 0;
-                    unk++;
-                }
-                else
-                {
-                    solution.Add(component.Id, terms[component.Id]);
-                }
+                EquivResistance += Components[key].Resistance;
             }
 
-            // correction  de la resolution
-            float sum = 0;
-
-            for(int j = 0; j < solution.Count; j++)
+            foreach (int key in terms.Keys)
             {
-                sum += solution[j];
-            }
-
-            if(sum == equalTo)
-            {
-                return solution;
-            } 
-            else
-            {
-                for(int k = 0; k < solution.Count; k++)
+                if(Components[key].Voltage != 0)
                 {
-                    if(solution[k] == 0)
+                    initialValtage = Components[key].Voltage;
+                    initialId = key;
+                    print($"key: {initialId}");
+                }
+            }
+            foreach (int key in terms.Keys)
+            {
+                if(!(Components[key].Id == initialId ) && !(Components[key].Type == "Switch"))
+                {
+                    float voltage = initialValtage * Components[key].Resistance/EquivResistance;
+                    if(!solutions.ContainsKey(key))
                     {
-                        solution[k] = (sum - equalTo)/unk;
+                        solutions.Add(Components[key].Id, voltage);
                     }
                 }
+                
+            }
 
-            }
-            
-            for(int key = 0; key < solution.Count; key++)
-            {
-                solutions[key] = solution[key];
-            }
         }
         
-        print($"solutions : {solutions.Count}");
+        // print($"solutions : {solutions.Count}");
         return solutions;
     }
 
@@ -406,14 +389,80 @@ public class Circuit : MonoBehaviour
                 // Mettre à jour les valeurs de courant et de tension du composant
                 
                 component.Voltage = solutions[component.Id]; // component.Value; // Exemple simplifié
-                // component.Value = componentValue;
             }
         }
+    }
+
+    private void CurrentDirectionControl()
+    {
+        List<List<CircuitComponent>> loops = DetectLoops2();
+
+        foreach (var loop in loops)
+        {
+            Loop lp = new Loop(loops);
+            if(lp.IsMainLoop())
+            {
+                CircuitComponent mainCp = lp.GetMainComponent();
+
+                Borne P = mainCp.pos;
+                P.cable.ChangeOrientation();
+                
+            }
+        }
+        
+
+        
+
+
+        
+
+
     }
 
 }
 
 
+public class Loop 
+{
+    private List<CircuitComponent> loopElements;
+
+    public void Loop( List<CircuitComponent> loop)
+    {
+        this.loopElements = loop;
+    }
+
+    public bool IsMainLoop()
+    {
+        foreach (CircuitComponent cp in loopElements)
+        {
+            if(cp.Type == "Battery")
+            {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    public CircuitComponent GetMainComponent()
+    {
+        foreach (CircuitComponent cp in loopElements)
+        {
+            if(cp.Type == "Battery")
+            {
+                return cp;
+            }
+            else if(cp.Current != 0)
+            {
+                return cp;
+            }
+            else{
+                return loopElements[0];
+            }
+        }
+    }
+
+}
 
 
 

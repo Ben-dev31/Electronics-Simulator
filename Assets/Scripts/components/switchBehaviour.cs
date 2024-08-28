@@ -31,7 +31,16 @@ public class switchBehaviour : MonoBehaviour
             cc.Current = 0f;
             cc.Voltage = 0f;
             circuitComponent.componentValue = 0;
-            circuitComponent.CalculateCurrentsAndVoltages();
+            CircuitComponent[] components = FindObjectsOfType<CircuitComponent>();
+            foreach (CircuitComponent component in components)
+            {
+                if(component.Id != 0)
+                {
+                    component.Current = 0f;
+                    component.Voltage = 0f;
+                }
+                
+            }
             // Anim.SetTrigger("TrunOff");
         }
         else

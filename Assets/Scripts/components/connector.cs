@@ -25,6 +25,16 @@ public class CableCreator : MonoBehaviour
     public MeshCreator meshCreator;
     private int cableCounter = 1;
 
+    public List<Transform> GetControllPoints()
+    {
+        List<Transform> cPoint = new List<Transform>();
+        for (int i = 0; i < pointObjects.Length; i++)
+        {
+            cPoint.Add(pointObjects[i].transform);
+        }
+
+        return cPoint;
+    }
 
     void Update()
     {
@@ -34,14 +44,6 @@ public class CableCreator : MonoBehaviour
             Connect();
         }
 
-        // if(makeModiffication)
-        // {
-        //     meshFilter = gameObject.GetComponent<MeshFilter>();
-        //     mesh = meshFilter.mesh;
-
-        //     // meshCreator = new MeshCreator(mesh, points, segmentCount);
-        //     meshCreator.CreateSmoothCylinderMesh();
-        // }
     }
 
     public void Connect()

@@ -30,7 +30,7 @@ public class UIcontroller : MonoBehaviour
         GetComponent<CableCreator>().Connect();
         GetComponent<Circuit>().InitializeCircuit();
         ActiveState = 0;
-        GetComponent<Circuit>().CalculateCurrentsAndVoltages();
+        // GetComponent<Circuit>().CalculateCurrentsAndVoltages();
     }
 
     private void OnClickModif(ClickEvent evt)
@@ -44,16 +44,14 @@ public class UIcontroller : MonoBehaviour
         {
             cc.DeActiveControlle();
             ActiveState = 0;
-            // SphereCollider sp = component.transform.Find("OFS").gameObject.GetComponent<SphereCollider>();
-            // sp.radius = 0.05f;
+           
 
         }
         else
         {
             cc.ActiveControlle();
             ActiveState = 1;
-            // SphereCollider sp = component.transform.Find("OFS").gameObject.GetComponent<SphereCollider>();
-            // sp.radius = 0.005f;
+           
         }
     }
 
@@ -68,7 +66,7 @@ public class UIcontroller : MonoBehaviour
                 w.Desconnect();
                 Destroy(item);
             }
-            GetComponent<Circuit>().CalculateCurrentsAndVoltages();
+            // GetComponent<Circuit>().CalculateCurrentsAndVoltages();
             
         }
         
