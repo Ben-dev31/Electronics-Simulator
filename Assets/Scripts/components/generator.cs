@@ -13,8 +13,14 @@ public class generator : MonoBehaviour
 
     CircuitComponent cc;
 
+    Borne bn;
+    Borne bp;
+
     void Start()
     {
+        bp = transform.Find("BorneP").GetComponent<Borne>();
+        bn = transform.Find("BorneN").GetComponent<Borne>();
+        
         cc = gameObject.GetComponent<CircuitComponent>();
 
         cc.Voltage = Value;
@@ -28,13 +34,14 @@ public class generator : MonoBehaviour
         oriantation = ort;
         if(oriantation == 1)
         {
-            cc.pos = cc.bp;
-            cc.neg = cc.bn;
+            
+            bp.Polarisation = 1;
+            bn.Polarisation = -1;
         }
         else
         {
-            cc.pos = cc.bn;
-            cc.neg = cc.bp;
+            bp.Polarisation = -1;
+            bn.Polarisation = 1;
         }
     }
 

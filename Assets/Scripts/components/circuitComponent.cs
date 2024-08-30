@@ -23,9 +23,6 @@ public class CircuitComponent : MonoBehaviour
 
     public Borne bp;
     public Borne bn;
-
-    public Borne pos;
-    public Borne neg;
     
     public int currentDirection = 0;
 
@@ -40,6 +37,27 @@ public class CircuitComponent : MonoBehaviour
         bn.nodeId = Node2.Id;
     }
 
+    public void CurrentDirectionControl()
+    {
+        if(bp.Polarisation == -1 && bp.cable.currentDirection == 0)
+        {
+            bp.cable.currentDirection = -1;
+            
+        }
+        else
+        {
+           if(bp.cable.currentDirection == 0) bp.cable.currentDirection = 1;
+        }
+        if(bn.Polarisation == -1 && bn.cable.currentDirection == 0)
+        {
+            bn.cable.currentDirection = -1;
+        }
+        else
+        {
+            if(bn.cable.currentDirection == 0) bn.cable.currentDirection = 1;
+        }
+    }
+
     public Node GetOtherNode(Node node)
     {
         return node == Node1 ? Node2 : Node1;
@@ -47,6 +65,7 @@ public class CircuitComponent : MonoBehaviour
 
     public Borne GetOtherBorne(Borne borne)
     {
+        //renvoie la borne de signe opposé
         return borne == bp ? bn : bp;
     }
 
@@ -55,5 +74,17 @@ public class CircuitComponent : MonoBehaviour
         if(bn.connectionCount < 1 || bp.connectionCount < 1) return false;
         return true;
     } 
+
+    public void ResetPolarisation(Borne enter)
+    {
+        if(enter == bp)
+        {
+            bn.Polarisation = bp.Polarisation == 1 ? -1 : 1;
+        }
+        else
+        {
+            bp.Polarisation = bn.Polarisation == 1 ? -1 : 1;
+        }
+    }
 
 }

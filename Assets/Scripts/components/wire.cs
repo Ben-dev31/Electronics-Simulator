@@ -13,8 +13,9 @@ public class Wire : MonoBehaviour
 
     private float ElectronRadius = 0.07f;
 
-    public int currentDirection = 1 ;
+    public int currentDirection = 0 ;
 
+    
     public void Initialize(GameObject[] bornes, List<GameObject> objs)
     {
         Componant1 = objs[0];
@@ -27,6 +28,59 @@ public class Wire : MonoBehaviour
         Rigidbody rd = gameObject.AddComponent<Rigidbody>();
         
         rd.isKinematic = true;
+    }
+
+    private void CheckPolarisation()
+    {
+        Borne B1 = cbornes[0].GetComponent<Borne>();
+        Borne B2 = cbornes[1].GetComponent<Borne>();
+
+        if(B1.Polarisation == 1 && B2.Polarisation == -1)
+        {
+            currentDirection = 1;
+        }
+        else if(B1.Polarisation == -1 && B2.Polarisation == 1)
+        {
+            currentDirection = 1;
+        }
+        else if(B1.Polarisation == 1 && B2.Polarisation == 1)
+        {
+            if(B2.Parent.GetComponent<CircuitComponent>().Type == "Battery")
+            {
+                print("if 3.1");
+                currentDirection = -1;
+            }
+            else if(B1.Parent.GetComponent<CircuitComponent>().Type == "Battery")
+            {
+                print("if 3.2");
+                currentDirection = 1;
+            }
+            else{
+                print("else");
+                currentDirection = 1;
+            }
+            
+        }
+        else if(B1.Polarisation == -1 && B2.Polarisation == -1)
+        {
+            if(B2.Parent.GetComponent<CircuitComponent>().Type == "Battery")
+            {
+                currentDirection = 1;
+            }
+            else if(B1.Parent.GetComponent<CircuitComponent>().Type == "Battery")
+            {
+                currentDirection = -1;
+            }
+            else{
+                currentDirection = 1;
+            }
+            
+        }
+        else{
+            currentDirection = 1;
+        }
+
+
     }
 
     public Borne GetOtherBorne(Borne borne)
@@ -48,7 +102,14 @@ public class Wire : MonoBehaviour
     private void CreateElectron()
     {
         List<Transform> controllPoints = creator.GetControllPoints();
-
+        // CheckPolarisation();
+       
+        if(!(cbornes[0].GetComponent<Borne>().Polarisation == 1))
+        {
+            controllPoints.Reverse();
+        }
+        
+        
         GameObject ElectronObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         ElectronObject.name = "electron";
         ElectronObject.transform.SetParent(transform);
@@ -70,9 +131,9 @@ public class Wire : MonoBehaviour
         }
     }
 
-    public void ChangeOrientation(GameObject PComp)
+    public void ChangeOrientation(Borne PComp)
     {
-        if(PComp == cbornes[0])
+        if(PComp.gameObject == cbornes[0])
         {
             currentDirection = 1;
         }
@@ -91,6 +152,7 @@ public class ElectronBezierMovement : MonoBehaviour
     public List<Transform> controlPoints; // Points de contrôle de la courbe de Bézier
     public float speed = 0.5f; // Vitesse de déplacement des électrons
     private float t = 0.0f; // Paramètre pour parcourir la courbe (de 0 à 1)
+    private int sp = 0;
 
     void Update()
     {
@@ -101,10 +163,11 @@ public class ElectronBezierMovement : MonoBehaviour
         if (t > 1.0f)
         {
             t = 0.0f;
+            sp = sp == 0 ? 1 : 0;
         }
 
         // Calcule la nouvelle position sur la courbe de Bézier
-        Vector3 newPosition = GetBezierPoint(t, controlPoints);
+        Vector3 newPosition = GetBezierPoint3(t, controlPoints)[sp];
 
         Vector3 tangent = GetBezierTangent(t, controlPoints);
 
@@ -162,34 +225,37 @@ public class ElectronBezierMovement : MonoBehaviour
         }
     }
 
-    Vector3 GetBezierPoint3(float t, List<Transform> points)
+    List<Vector3> GetBezierPoint3(float t, List<Transform> points)
     {
-        Vector3 p0 = new Vector3();
-        Vector3 p1 = new Vector3();
-        Vector3 p2 = new Vector3();
-        Vector3 p3 = new Vector3();
+        List<Vector3> interpolatedPoint = new List<Vector3>();
+        // int interpolationCount = 10;
 
-        if (points.Count == 3)
+        for (int i = 0; i < points.Count - 1; i++)
         {
-            p0 = points[0].position;
-            p1 = points[1].position;
-            p2 = points[2].position;
-            p3 = points[2].position;
-            // Bézier quadratique (3 points de contrôle)
-            float t2 = t * t;
-            float t3 = t2 * t;
+            Vector3 p0 = i > 0 ? points[i - 1].position : points[i].position;
+            Vector3 p1 = points[i].position;
+            Vector3 p2 = points[i + 1].position;
+            Vector3 p3 = i < points.Count - 2 ? points[i + 2].position : points[i + 1].position;
 
-            return 0.5f*((2f * p1) +
-                        (-p0 + p2) * t +
-                        (2f * p0 - 5f * p1 + 4f * p2 ) * t2 +
-                        (-p0 + 3f * p1 - 3f * p2 ) * t3 );
+            // for (int j = 0; j < interpolationCount; j++)
+            // {
+            //     float t = (float)j / interpolationCount;
+            Vector3 interpolated = CatmullRom(p0, p1, p2, p3, t);
+            interpolatedPoint.Add(interpolated);
+            // }
         }
-        
-        else
-        {
-            // Par défaut, retourne le premier point si le nombre de points de contrôle est incorrect
-            return points[0].position;
-        }
+        return interpolatedPoint;
+    }
+
+    Vector3 CatmullRom(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
+    {
+        float t2 = t * t;
+        float t3 = t2 * t;
+
+        return 0.5f * ((2f * p1) +
+                       (-p0 + p2) * t +
+                       (2f * p0 - 5f * p1 + 4f * p2 - p3) * t2 +
+                       (-p0 + 3f * p1 - 3f * p2 + p3) * t3);
     }
     Vector3 GetBezierPoint2(float t, List<Transform> points)
     {

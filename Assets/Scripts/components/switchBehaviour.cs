@@ -41,6 +41,11 @@ public class switchBehaviour : MonoBehaviour
                 }
                 
             }
+            Borne[] Bornecomponents = FindObjectsOfType<Borne>();
+            foreach (Borne item in Bornecomponents)
+            {
+                item.ResetRange();
+            }
             // Anim.SetTrigger("TrunOff");
         }
         else
