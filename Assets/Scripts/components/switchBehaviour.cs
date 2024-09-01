@@ -5,7 +5,7 @@ using UnityEngine;
 public class switchBehaviour : MonoBehaviour
 {
     
-    [SerializeField] private bool isOn = false;
+    public bool isOn = false;
     public CircuitComponent cc;
     private Circuit circuitComponent;
     // public Animator Anim;
@@ -54,6 +54,18 @@ public class switchBehaviour : MonoBehaviour
             circuitComponent.componentValue = 1;
             circuitComponent.CalculateCurrentsAndVoltages();
             // Anim.SetTrigger("TrunOn");
+        }
+    }
+
+    private void RemoveElectrons()
+    {
+        ElectronBezierMovement[] Electrons = FindObjectsOfType<ElectronBezierMovement>();
+        if(Electrons.Length > 0)
+        {
+            foreach (ElectronBezierMovement electron in Electrons)
+            {
+                Destroy(electron.gameObject);
+            }
         }
     }
 }

@@ -8,8 +8,11 @@ public class UIcontroller : MonoBehaviour
     public VisualElement bntModif;
     public VisualElement bntCon;
     public VisualElement bntDel;
+    public VisualElement elec;
 
     private int ActiveState = 1;
+
+    private bool electronV = false;
 
     void Start()
     {
@@ -21,6 +24,9 @@ public class UIcontroller : MonoBehaviour
 
         bntDel = GetComponent<UIDocument>().rootVisualElement.Q<Button>("del");
         bntDel.RegisterCallback<ClickEvent>(OnClickDel);
+
+        elec = GetComponent<UIDocument>().rootVisualElement.Q<Button>("elec");
+        elec.RegisterCallback<ClickEvent>(OnClickElec);
         
     }
 
@@ -70,5 +76,44 @@ public class UIcontroller : MonoBehaviour
             
         }
         
+    }
+
+    private void OnClickElec(ClickEvent evt)
+    {
+        
+        if(!electronV)
+        {
+            ViewElectrons();
+            electronV = true;
+        }
+        else
+        {
+            RemoveElectrons();
+            electronV = false; 
+        }
+    }
+    private void ViewElectrons()
+    {
+        Wire[] Cables = FindObjectsOfType<Wire>();
+
+        if(Cables.Length > 0)
+        {
+            foreach (Wire cable in Cables)
+            {
+                cable.CreateElectron();
+            }
+        }
+    }
+
+    private void RemoveElectrons()
+    {
+        ElectronBezierMovement[] Electrons = FindObjectsOfType<ElectronBezierMovement>();
+        if(Electrons.Length > 0)
+        {
+            foreach (ElectronBezierMovement electron in Electrons)
+            {
+                Destroy(electron.gameObject);
+            }
+        }
     }
 }

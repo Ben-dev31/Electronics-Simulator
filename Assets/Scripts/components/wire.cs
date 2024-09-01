@@ -8,12 +8,29 @@ public class Wire : MonoBehaviour
     
     public GameObject Componant1;
     public GameObject Componant2;
+    // les composants auxquels le cable est rataché
 
     private GameObject[] cbornes;
+    // les bornes auxquels le cable est rataché (taille 2)
 
     private float ElectronRadius = 0.07f;
+    // rayon de la sphère representant un électron
 
     public int currentDirection = 0 ;
+    // direction du courant dans le cable
+    // indique le sens de circulation des électrons 
+
+    private int ElectronNumber = 3;
+    // le nombre d'électrons à générer 
+
+    public int WireId;   
+    // indique si le cable appartient à une maille principale ou secondaire 
+    // 0        pour maille principal
+    // 1,2,3... pour maille secondaire
+    // null si le composant n'est pas connecté
+
+    public int loopId = -1;
+    // Id de la maille auquelle le cable appartient 
 
     
     public void Initialize(GameObject[] bornes, List<GameObject> objs)
@@ -99,8 +116,9 @@ public class Wire : MonoBehaviour
         Componant2.GetComponent<CircuitComponent>().cables.Remove(gameObject);
     }
 
-    private void CreateElectron()
+    public void CreateElectron()
     {
+        if(currentDirection == 0 ) return;
         List<Transform> controllPoints = creator.GetControllPoints();
         // CheckPolarisation();
        
@@ -130,6 +148,7 @@ public class Wire : MonoBehaviour
             CreateElectron();
         }
     }
+
 
     public void ChangeOrientation(Borne PComp)
     {

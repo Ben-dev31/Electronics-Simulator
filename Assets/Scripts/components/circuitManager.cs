@@ -64,30 +64,7 @@ public class Circuit : MonoBehaviour
         }
     }
 
-    // public List<Node> DetectNodes()
-    // {
-        
-
-    //     List<Node> detectedNodes = new List<Node>();
-    //     Dictionary<int, Node> nodeMap = new Dictionary<int, Node>();
-
-    //     foreach (var component in Components.Values)
-    //     {
-    //         foreach (var node in new Node[] { component.Node1, component.Node2 })
-    //         {
-    //             if (!nodeMap.ContainsKey(node.Id))
-    //             {
-    //                 Node newNode = new Node(node.Id);
-    //                 detectedNodes.Add(newNode);
-    //                 nodeMap[node.Id] = newNode;
-    //             }
-    //             nodeMap[node.Id].ConnectedComponents.Add(component);
-    //         }
-    //     }
-
-    //     return detectedNodes;
-    // }
-
+    
     public List<Node> DetectNodes()
     {
         List<Node> detectedNodes = new List<Node>();
@@ -112,9 +89,6 @@ public class Circuit : MonoBehaviour
             }
             
         }
-
-        
-
         return detectedNodes;
     }
 
@@ -167,7 +141,7 @@ public class Circuit : MonoBehaviour
         // Check for null or empty cases before proceeding
         // if (nodes == null || nodes.Count == 0) return AllLoops;
 
-        void Dfss(Borne startBorne, CircuitComponent startComponent, List<CircuitComponent> currentLoop)
+        void Dfss(Borne startBorne, CircuitComponent startComponent, List<CircuitComponent> currentLoop, List<Wire> cap)
         {
             if (startComponent == null || startBorne == null) return;
 
@@ -177,29 +151,52 @@ public class Circuit : MonoBehaviour
                 if (startComponent == currentLoop[0])
                 {
                     loopCounter++;
-                    AllLoops.Add(new Loop(new List<CircuitComponent>(currentLoop))); // Use ToList() to avoid reference issues
+                    Loop lp = new Loop(new List<CircuitComponent>(currentLoop));
+                    lp.loopCable = cap;
+                    AllLoops.Add(lp); // Use ToList() to avoid reference issues
                     // print($"lp : {AllLoops[AllLoops.Count - 1].Count}");
                     return;
                 }
             }
 
-            currentLoop.Add(startComponent);
+            Wire cable = startBorne.GetOtherCable();
 
-            Wire cable = startBorne.cable;
+            if(startBorne.connectionCount > 1)
+            {
+                foreach (Wire w in startBorne.GetAllCable())
+                {
+                    if(!startBorne.visitedCable.Contains(w))
+                        cable = w;
+                }
+                
+            }
+            cap.Add(cable);
+
             if (cable == null) return;
 
             Borne nextBorne = cable.GetOtherBorne(startBorne);
-            if (nextBorne == null) return;
-
+            Wire newCable = nextBorne.GetOtherCable(cable);
+            
+            if (newCable == null)
+            {
+                currentLoop.Add(startComponent);
+                cap.Add(cable);
+            }
+            else
+            {
+                nextBorne = newCable.GetOtherBorne(nextBorne);
+            }
+        
             CircuitComponent nextComponent = nextBorne.Parent.GetComponent<CircuitComponent>();
             if (nextComponent == null) return;
 
             nextBorne = nextComponent.GetOtherBorne(nextBorne);
 
-            Dfss(nextBorne, nextComponent, currentLoop);
+            Dfss(nextBorne, nextComponent, currentLoop, cap);
 
             // Backtracking: remove the component after recursion
-            currentLoop.RemoveAt(currentLoop.Count - 1);
+            // if(currentLoop.Count > 1 )
+            //     currentLoop.RemoveAt(currentLoop.Count - 1);
         }
 
         // Traverse all components and nodes to ensure no loop is missed
@@ -209,7 +206,7 @@ public class Circuit : MonoBehaviour
 
             Borne initialBorne = component.bp;
 
-            Dfss(initialBorne, component, new List<CircuitComponent>());
+            Dfss(initialBorne, component, new List<CircuitComponent>(), new List<Wire>());
             
         }
 
@@ -223,7 +220,7 @@ public class Circuit : MonoBehaviour
                 if (!visitedNodes.Contains(node) && nodeBorne != null)  // Avoid revisiting nodes
                 {
                     visitedNodes.Add(node);
-                    Dfss(nodeBorne, nodeComponent, new List<CircuitComponent>());
+                    Dfss(nodeBorne, nodeComponent, new List<CircuitComponent>(), new List<Wire>());
                 }
             }
         }
@@ -233,6 +230,15 @@ public class Circuit : MonoBehaviour
         // {
         //     print($"loops test : {AllLoops[0].loopElements.Count}");
         // }
+
+        // for(int i = 0; i< AllLoops.Count; i++)
+        // {
+        //     if(!AllLoops[i].IsCorrect())
+        //        AllLoops.RemoveAt(i);
+            
+        // }
+
+        print($"all : {AllLoops.Count}");
 
         return AllLoops;
     }
@@ -271,14 +277,34 @@ public class Circuit : MonoBehaviour
         return component.TrueConnection();
     }
 
+    private void IdentifiLoops(List<Loop> loops)
+    {
+        List<Loop> AllLp = loops;
+
+        Loop main = DetectMainLoop(loops);
+        main.LoopId = 0;
+        AllLp.Remove(main);
+
+        int i = 1;
+        foreach (Loop lp in AllLp)
+        {
+            lp.LoopId = i;
+            i++;
+        }
+        
+
+    }
     // calcul des grandeurs 
     public void CalculateCurrentsAndVoltages()
     {
         InitializeCircuit();
         // DetectNodes();
         // var nodeEquations = GenerateNodeEquations();
-
+        
         List<Loop> loops = DetectLoops();
+
+        IdentifiLoops(loops);
+
         var loopEquations = GenerateLoopEquations(loops);
 
         // var allEquations = new List<Equation>(nodeEquations);
@@ -430,14 +456,14 @@ public class Circuit : MonoBehaviour
         Loop MainLoop = DetectMainLoop(AllLoops);
 
         AllLoops.RemoveAt(AllLoops.IndexOf(MainLoop));
-
-        CircuitComponent main = MainLoop.GetMainComponent();
-
         Borne[] Bornecomponents = FindObjectsOfType<Borne>();
+
         foreach (Borne item in Bornecomponents)
         {
             item.ResetRange();
         }
+
+        CircuitComponent main = MainLoop.GetMainComponent();
 
         List<CircuitComponent> visitedCp = new List<CircuitComponent>();
 
@@ -456,8 +482,16 @@ public class Circuit : MonoBehaviour
 
             gss(nextComponent,newStartBorne);
         }
-        // print($"{main.gameObject.name}");
+
+        print($"{main.gameObject.name}");
+
         gss(main, main.bp);
+
+        foreach (Loop loop in AllLoops)
+        {
+            CircuitComponent mainC = loop.GetMainComponent();
+            gss(mainC, mainC.bp);
+        }
 
     }
 
@@ -468,9 +502,18 @@ public class Loop
 {
     public List<CircuitComponent> loopElements;
 
-    private List<Wire> loopCable = new List<Wire>();
-
-    public int loopId;
+    public List<Wire> loopCable = new List<Wire>();
+    private int _loopId;
+    public int LoopId
+    {
+        get{
+            return _loopId;
+        }
+        set{
+            _loopId = value;
+            IdentifiElements();
+        }
+    }
 
     public int Count
     {
@@ -484,6 +527,27 @@ public class Loop
     {
         Debug.Log($"in loop class : {loop.Count}");
         this.loopElements = loop;
+    }
+
+    // Association des ids de loop aux cable et aux composant de la boucle
+    private void IdentifiElements()
+    {
+        foreach (Wire cb in loopCable)
+        {
+            cb.loopId = LoopId;
+        }
+        foreach (CircuitComponent cp in loopElements)
+        {
+            cp.loopIdList.Add(LoopId);
+        }
+    }
+
+    public bool IsCorrect()
+    {
+        if(loopCable.Count != loopElements.Count)
+            return false;
+        
+        return true;
     }
 
     public void SetElements(List<CircuitComponent> loop)
@@ -526,7 +590,7 @@ public class Loop
             loopCable.Add(cable);
         }
         else{
-            Debug.LogWarning($"Loop {loopId} already contains {cable.gameObject.name}");
+            Debug.LogWarning($"Loop {_loopId} already contains {cable.gameObject.name}");
         }
     }
     public CircuitComponent GetMainComponent()
@@ -547,6 +611,19 @@ public class Loop
         }
        
        return Comp;
+    }
+
+
+    public void CurrentDirection()
+    {
+        CircuitComponent M = this.GetMainComponent();
+
+        Borne Bn = M.bn;
+
+        void guu(CircuitComponent startCp, Borne startBn)
+        {
+            
+        }
     }
 
 }

@@ -26,6 +26,10 @@ public class CircuitComponent : MonoBehaviour
     
     public int currentDirection = 0;
 
+    public List<int> loopIdList = new List<int>();
+    // Id de la maille auquelle le le composant appartient 
+
+
     void Start()
     {
         Node1 = new Node(Id*2);
@@ -39,6 +43,7 @@ public class CircuitComponent : MonoBehaviour
 
     public void CurrentDirectionControl()
     {
+        
         if(bp.Polarisation == -1 && bp.cable.currentDirection == 0)
         {
             bp.cable.currentDirection = -1;
