@@ -105,6 +105,11 @@ public class Wire : MonoBehaviour
         return borne == cbornes[0].GetComponent<Borne>() ? cbornes[1].GetComponent<Borne>() : cbornes[0].GetComponent<Borne>();
     }
 
+    public CircuitComponent GetOtherComponent(CircuitComponent cp)
+    {
+        return cp != Componant1.GetComponent<CircuitComponent>() ? Componant1.GetComponent<CircuitComponent>() : Componant2.GetComponent<CircuitComponent>();
+    }
+
     public void Desconnect()
     {
         foreach (GameObject item in cbornes)

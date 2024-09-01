@@ -92,4 +92,16 @@ public class CircuitComponent : MonoBehaviour
         }
     }
 
+   public List<Wire> GetAllCable()
+   {
+        List<Wire> w = new List<Wire>();
+
+        foreach (GameObject item in cables)
+        {
+            w.Add(item.GetComponent<Wire>());
+        }
+
+        return w;
+   }
+
 }

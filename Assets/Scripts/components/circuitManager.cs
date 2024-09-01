@@ -136,109 +136,50 @@ public class Circuit : MonoBehaviour
 
         if (Components.Count < 2) return AllLoops;
 
-        List<Node> nodes = DetectNodes();
-
-        // Check for null or empty cases before proceeding
-        // if (nodes == null || nodes.Count == 0) return AllLoops;
-
-        void Dfss(Borne startBorne, CircuitComponent startComponent, List<CircuitComponent> currentLoop, List<Wire> cap)
+        void Dfss(Wire startcable, CircuitComponent startComponent, List<CircuitComponent> currentLoop, List<Wire> cap)
         {
-            if (startComponent == null || startBorne == null) return;
+            if (startComponent == null) return;
 
             if (currentLoop.Contains(startComponent))
             {
-                // If we revisit the same component and it's the first one, we have a loop
-                if (startComponent == currentLoop[0])
-                {
-                    loopCounter++;
-                    Loop lp = new Loop(new List<CircuitComponent>(currentLoop));
-                    lp.loopCable = cap;
-                    AllLoops.Add(lp); // Use ToList() to avoid reference issues
-                    // print($"lp : {AllLoops[AllLoops.Count - 1].Count}");
-                    return;
-                }
-            }
-
-            Wire cable = startBorne.GetOtherCable();
-
-            if(startBorne.connectionCount > 1)
-            {
-                foreach (Wire w in startBorne.GetAllCable())
-                {
-                    if(!startBorne.visitedCable.Contains(w))
-                        cable = w;
-                }
+                loopCounter++;
+                Loop lp = new Loop(new List<CircuitComponent>(currentLoop));
+                lp.loopCable = cap;
+                AllLoops.Add(lp); 
+                return;
                 
             }
-            cap.Add(cable);
 
-            if (cable == null) return;
+            currentLoop.Add(startComponent);
 
-            Borne nextBorne = cable.GetOtherBorne(startBorne);
-            Wire newCable = nextBorne.GetOtherCable(cable);
-            
-            if (newCable == null)
+            cap.Add(startcable);
+
+            List<Wire> cables = startComponent.GetAllCable();
+ 
+            if(cables.Count > 2)
             {
-                currentLoop.Add(startComponent);
-                cap.Add(cable);
+                foreach (Wire item in cables)
+                { 
+                    if(item != startcable)
+                        Dfss(item,startComponent,currentLoop,cap);
+                }
             }
             else
             {
-                nextBorne = newCable.GetOtherBorne(nextBorne);
-            }
-        
-            CircuitComponent nextComponent = nextBorne.Parent.GetComponent<CircuitComponent>();
-            if (nextComponent == null) return;
+                int idx = cables.IndexOf(startcable);
+                Wire cable = idx == 1 ? cables[0] : cables[1];
+                CircuitComponent newStartComponent = cable.GetOtherComponent(startComponent);
 
-            nextBorne = nextComponent.GetOtherBorne(nextBorne);
-
-            Dfss(nextBorne, nextComponent, currentLoop, cap);
-
-            // Backtracking: remove the component after recursion
-            // if(currentLoop.Count > 1 )
-            //     currentLoop.RemoveAt(currentLoop.Count - 1);
-        }
-
-        // Traverse all components and nodes to ensure no loop is missed
-        foreach (var component in Components.Values)
-        {
-            if (component == null || component.bp == null) continue;
-
-            Borne initialBorne = component.bp;
-
-            Dfss(initialBorne, component, new List<CircuitComponent>(), new List<Wire>());
-            
-        }
-
-        if (nodes.Count > 0)
-        {
-            foreach (var node in nodes)
-            {
-                CircuitComponent nodeComponent = node.ConnectedComponents[0];
-                Borne nodeBorne = nodeComponent.bp;
-
-                if (!visitedNodes.Contains(node) && nodeBorne != null)  // Avoid revisiting nodes
-                {
-                    visitedNodes.Add(node);
-                    Dfss(nodeBorne, nodeComponent, new List<CircuitComponent>(), new List<Wire>());
-                }
+                Dfss(cable,newStartComponent,currentLoop,cap);
             }
         }
 
-        // Prevent access to an empty list 
-        // if (AllLoops.Count > 0)
-        // {
-        //     print($"loops test : {AllLoops[0].loopElements.Count}");
-        // }
+        CircuitComponent startComponent = Components[0];
+        Wire startcable = startComponent.GetAllCable()[0];
 
-        // for(int i = 0; i< AllLoops.Count; i++)
-        // {
-        //     if(!AllLoops[i].IsCorrect())
-        //        AllLoops.RemoveAt(i);
-            
-        // }
+        Dfss(startcable, startComponent, new List<CircuitComponent>(), new List<Wire>());
 
-        print($"all : {AllLoops.Count}");
+        // print($"all : {AllLoops.Count}");
 
         return AllLoops;
     }
@@ -253,6 +194,7 @@ public class Circuit : MonoBehaviour
         {
             if(item.IsMainLoop())
             {
+               
                 MainLoop.Add(item);
             }
         }
@@ -303,17 +245,20 @@ public class Circuit : MonoBehaviour
         
         List<Loop> loops = DetectLoops();
 
-        IdentifiLoops(loops);
+        // print($"loops : {loops.Count}");
 
-        var loopEquations = GenerateLoopEquations(loops);
+        IdentifiLoops(new List<Loop>(loops));
+
+        var loopEquations = GenerateLoopEquations(new List<Loop>(loops));
 
         // var allEquations = new List<Equation>(nodeEquations);
         // allEquations.AddRange(loopEquations);
         // print(allEquations.Count);
+        UpdateComponentCurrentValues(new List<Loop>(loops));
+        
         var solutions = SolveVoltageEquations(loopEquations);
         UpdateComponentVoltage(solutions);
 
-        UpdateComponentCurrentValues(loops);
     }
 
     void UpdateComponentCurrentValues(List<Loop> loops)
@@ -525,7 +470,6 @@ public class Loop
 
     public Loop( List<CircuitComponent> loop = null)
     {
-        Debug.Log($"in loop class : {loop.Count}");
         this.loopElements = loop;
     }
 
@@ -583,6 +527,7 @@ public class Loop
         
         return false;
     }
+
     public void AddCable(Wire cable)
     {
         if(!loopCable.Contains(cable))
