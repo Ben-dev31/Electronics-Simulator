@@ -13,7 +13,7 @@ public class Borne: MonoBehaviour
     // private int _polarisation = 0;
     public int Polarisation = 0;
 
-    private List<Wire> _cables = new List<Wire>();
+    public List<Wire> _cables = new List<Wire>();
 
     private int getindex = 0;
 
@@ -43,6 +43,14 @@ public class Borne: MonoBehaviour
         return _cables;
     }
 
+    public void RemoveCable(Wire cab)
+    {
+        if(_cables.Contains(cab))
+        {
+            _cables.RemoveAt(_cables.IndexOf(cab));
+        }
+    }
+    
     public Wire GetOtherCable(Wire cb = null)
     {
         Wire w = null;

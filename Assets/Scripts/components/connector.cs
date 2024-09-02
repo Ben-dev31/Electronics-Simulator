@@ -57,23 +57,7 @@ public class CableCreator : MonoBehaviour
 
         // creation du cable
         cableObject = new GameObject($"cable {cableCounter}");
-        // cableObject.name = $"cable {cableCounter}";
-        // if(cablePrefab == null)
-        // {
-        //     cableObject = new GameObject($"cable {cableCounter}");
-        // }
-        // else
-        // {
-        //     cableObject = Instantiate(cablePrefab);
-        //     cableObject.transform.position = (points[points.Count-1] + points[0])/2f;
-        //     cableObject.transform.localScale = new Vector3(
-        //         cableObject.transform.localScale.x,
-        //         Vector3.Distance(points[points.Count-1],points[0]),
-        //         cableObject.transform.localScale.z
-        //     );
-        // }
-        // cableObject.transform.position = points[(int)points.Count/2];
-
+        
         cableCounter++;
 
         meshFilter = cableObject.GetComponent<MeshFilter>();

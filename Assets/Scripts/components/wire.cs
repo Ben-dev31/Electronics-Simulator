@@ -13,15 +13,23 @@ public class Wire : MonoBehaviour
     private GameObject[] cbornes;
     // les bornes auxquels le cable est rataché (taille 2)
 
-    private float ElectronRadius = 0.07f;
+    private float ElectronRadius = 0.02f;
     // rayon de la sphère representant un électron
 
     public int currentDirection = 0 ;
     // direction du courant dans le cable
     // indique le sens de circulation des électrons 
 
-    private int ElectronNumber = 3;
+    private int ElectronNumber = 10;
     // le nombre d'électrons à générer 
+
+    public int ElectronLength = 0;
+
+    public bool ElectronCreating = false;
+
+    private float craetTime = 0f;
+
+    public float speed = 0.8f; 
 
     public int WireId;   
     // indique si le cable appartient à une maille principale ou secondaire 
@@ -32,6 +40,8 @@ public class Wire : MonoBehaviour
     public int loopId = -1;
     // Id de la maille auquelle le cable appartient 
 
+    public Material transparentMat;
+    public Material defautMaterial;
     
     public void Initialize(GameObject[] bornes, List<GameObject> objs)
     {
@@ -45,6 +55,9 @@ public class Wire : MonoBehaviour
         Rigidbody rd = gameObject.AddComponent<Rigidbody>();
         
         rd.isKinematic = true;
+
+        transparentMat = Resources.Load<Material>("Materials/cableMaterial");
+        defautMaterial = gameObject.GetComponent<Renderer>().materials[0];
     }
 
     private void CheckPolarisation()
@@ -115,11 +128,14 @@ public class Wire : MonoBehaviour
         foreach (GameObject item in cbornes)
         {
             Borne bn = item.GetComponent<Borne>();
+            bn.RemoveCable(this);
+
             bn.connectionCount -= 1;
         }
         Componant1.GetComponent<CircuitComponent>().cables.Remove(gameObject);
         Componant2.GetComponent<CircuitComponent>().cables.Remove(gameObject);
     }
+
 
     public void CreateElectron()
     {
@@ -131,8 +147,7 @@ public class Wire : MonoBehaviour
         {
             controllPoints.Reverse();
         }
-        
-        
+
         GameObject ElectronObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         ElectronObject.name = "electron";
         ElectronObject.transform.SetParent(transform);
@@ -144,16 +159,24 @@ public class Wire : MonoBehaviour
 
         ElectronBezierMovement ElBMovement = ElectronObject.AddComponent<ElectronBezierMovement>();
         ElBMovement.controlPoints = controllPoints;
+
+        ElectronLength++;
+        
     }
 
     void Update()
     {
-        if(Input.GetKey(KeyCode.LeftControl))
+        if(ElectronCreating && ElectronNumber > ElectronLength)
         {
-            CreateElectron();
+            if(craetTime >= 0.3f)
+            {
+                CreateElectron();
+                craetTime = 0f;
+            }
+            craetTime += speed * Time.deltaTime;
+            print($"{craetTime}");
         }
     }
-
 
     public void ChangeOrientation(Borne PComp)
     {
@@ -167,6 +190,18 @@ public class Wire : MonoBehaviour
         }
     }
 
+    public void ToggleView(int t)
+    {
+        Material[] mats = new Material[1];
+
+        if(t == 1)
+            mats[0] = transparentMat;
+        else
+            mats[0] = defautMaterial;
+
+        gameObject.GetComponent<Renderer>().materials = mats;
+    }
+
     
 }
 
@@ -174,7 +209,7 @@ public class Wire : MonoBehaviour
 public class ElectronBezierMovement : MonoBehaviour
 {
     public List<Transform> controlPoints; // Points de contrôle de la courbe de Bézier
-    public float speed = 0.5f; // Vitesse de déplacement des électrons
+    public float speed = 0.8f; // Vitesse de déplacement des électrons
     private float t = 0.0f; // Paramètre pour parcourir la courbe (de 0 à 1)
     private int sp = 0;
 

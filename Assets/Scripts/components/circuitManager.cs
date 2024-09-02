@@ -130,9 +130,8 @@ public class Circuit : MonoBehaviour
 
     public List<Loop> DetectLoops()
     {
-        HashSet<Node> visitedNodes = new HashSet<Node>();
+        HashSet<CircuitComponent> visitedNodes = new HashSet<CircuitComponent>();
         List<Loop> AllLoops = new List<Loop>();
-        int loopCounter = 0;
 
         if (Components.Count < 2) return AllLoops;
 
@@ -142,45 +141,54 @@ public class Circuit : MonoBehaviour
 
             if (currentLoop.Contains(startComponent))
             {
-                loopCounter++;
-                Loop lp = new Loop(new List<CircuitComponent>(currentLoop));
-                lp.loopCable = cap;
-                AllLoops.Add(lp); 
-                return;
                 
-            }
+                Loop lp = new Loop(new List<CircuitComponent>(currentLoop));
+                lp.loopCable = new List<Wire>(cap);
+                AllLoops.Add(lp);
 
-            currentLoop.Add(startComponent);
-
-            cap.Add(startcable);
-
-            List<Wire> cables = startComponent.GetAllCable();
- 
-            if(cables.Count > 2)
-            {
-                foreach (Wire item in cables)
-                { 
-                    if(item != startcable)
-                        Dfss(item,startComponent,currentLoop,cap);
-                }
+                return;
             }
             else
             {
-                int idx = cables.IndexOf(startcable);
-                Wire cable = idx == 1 ? cables[0] : cables[1];
-                CircuitComponent newStartComponent = cable.GetOtherComponent(startComponent);
+                currentLoop.Add(startComponent);
+            }
 
-                Dfss(cable,newStartComponent,currentLoop,cap);
+            cap.Add(startcable);
+            visitedNodes.Add(startComponent);
+
+            List<Wire> cables = startComponent.GetAllCable();
+
+            if (cables.Count > 2)
+            {
+                foreach (Wire item in cables)
+                {
+                    if (item != startcable)
+                    {
+                        CircuitComponent newStartComponent = item.GetOtherComponent(startComponent);
+                        Dfss(item, newStartComponent, new List<CircuitComponent>(currentLoop), new List<Wire>(cap));
+                    }
+                } 
+            }
+            else if (cables.Count == 2)
+            {
+                int idx = cables.IndexOf(startcable);
+                Wire nextCable = idx == 1 ? cables[0] : cables[1];
+                CircuitComponent newStartComponent = nextCable.GetOtherComponent(startComponent);
+
+                Dfss(nextCable, newStartComponent, currentLoop, cap);
             }
         }
 
-        CircuitComponent startComponent = Components[0];
-        Wire startcable = startComponent.GetAllCable()[0];
+        foreach (CircuitComponent startComponent in Components.Values)
+        {
+            if (!visitedNodes.Contains(startComponent))
+            {
+                Wire startcable = startComponent.GetAllCable()[0];
+                Dfss(startcable, startComponent, new List<CircuitComponent>(), new List<Wire>());
+            }
+        }
 
-        Dfss(startcable, startComponent, new List<CircuitComponent>(), new List<Wire>());
-
-        // print($"all : {AllLoops.Count}");
-
+        print($"loop count : {AllLoops.Count}");
         return AllLoops;
     }
 
@@ -189,6 +197,7 @@ public class Circuit : MonoBehaviour
     private Loop DetectMainLoop(List<Loop> loops)
     {
         List<Loop> MainLoop = new List<Loop>();
+        Loop main = new Loop();
 
         foreach (Loop item in loops)
         {
@@ -200,13 +209,17 @@ public class Circuit : MonoBehaviour
         }
         if(MainLoop.Count == 1) return MainLoop[0];
 
-        Loop main = MainLoop[0];
-
-        foreach (Loop lp in MainLoop)
+        if(MainLoop.Count > 1)
         {
-            if(lp.MultiConnectionCount() > main.MultiConnectionCount())
+
+            main = MainLoop[0];
+
+            foreach (Loop lp in MainLoop)
             {
-                main = lp;
+                if(lp.MultiConnectionCount() > main.MultiConnectionCount())
+                {
+                    main = lp;
+                }
             }
         }
 
@@ -221,7 +234,7 @@ public class Circuit : MonoBehaviour
 
     private void IdentifiLoops(List<Loop> loops)
     {
-        List<Loop> AllLp = loops;
+        List<Loop> AllLp = new List<Loop>(loops);
 
         Loop main = DetectMainLoop(loops);
         main.LoopId = 0;
@@ -236,6 +249,49 @@ public class Circuit : MonoBehaviour
         
 
     }
+
+    private List<Loop> RemoveDouble(List<Loop> loops)
+    {
+        List<Loop> newList = new List<Loop>();
+        List<Loop> visit = new List<Loop>();
+        Loop lp = loops[0];
+
+        void gff(Loop lp)
+        {
+            if(visit.Contains(lp)) return;
+
+            foreach (Loop item in loops)
+            {
+                if(loops.IndexOf(item) == loops.IndexOf(lp)) continue;
+                else
+                {
+                    if(lp.CompareTo(item))
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        if(!newList.Contains(item))
+                            newList.Add(item);
+                    }
+                }
+            }
+
+            visit.Add(lp);
+        }
+        if(loops.Count > 1)
+        {
+            foreach (Loop item in loops)
+            {
+                gff(item);
+            }
+        }
+        else
+            return loops;
+        
+        return newList;
+        
+    }
     // calcul des grandeurs 
     public void CalculateCurrentsAndVoltages()
     {
@@ -244,8 +300,8 @@ public class Circuit : MonoBehaviour
         // var nodeEquations = GenerateNodeEquations();
         
         List<Loop> loops = DetectLoops();
-
-        // print($"loops : {loops.Count}");
+        loops = RemoveDouble(loops);
+        print($"loops : {loops.Count}");
 
         IdentifiLoops(new List<Loop>(loops));
 
@@ -254,10 +310,11 @@ public class Circuit : MonoBehaviour
         // var allEquations = new List<Equation>(nodeEquations);
         // allEquations.AddRange(loopEquations);
         // print(allEquations.Count);
-        UpdateComponentCurrentValues(new List<Loop>(loops));
         
         var solutions = SolveVoltageEquations(loopEquations);
         UpdateComponentVoltage(solutions);
+        
+        UpdateComponentCurrentValues(new List<Loop>(loops));
 
     }
 
@@ -428,13 +485,14 @@ public class Circuit : MonoBehaviour
             gss(nextComponent,newStartBorne);
         }
 
-        print($"{main.gameObject.name}");
+        print($"main cp :{main.gameObject.name}");
 
         gss(main, main.bp);
 
         foreach (Loop loop in AllLoops)
         {
             CircuitComponent mainC = loop.GetMainComponent();
+            print($"{mainC.gameObject.name}");
             gss(mainC, mainC.bp);
         }
 
@@ -484,6 +542,18 @@ public class Loop
         {
             cp.loopIdList.Add(LoopId);
         }
+    }
+
+    public bool CompareTo(Loop cpLoop)
+    {
+        foreach (CircuitComponent cp in cpLoop.loopElements)
+        {
+            if(!loopElements.Contains(cp)) 
+                return false;
+            else 
+                continue;
+        }
+        return true;
     }
 
     public bool IsCorrect()
@@ -542,8 +612,16 @@ public class Loop
     {
         CircuitComponent Comp = loopElements[0];
 
+        Debug.Log($"loop {_loopId} components:");
         foreach (CircuitComponent cp in loopElements)
         {
+            Debug.Log($"{cp.gameObject.name}");
+        }
+        Debug.Log("====================================");
+
+        foreach (CircuitComponent cp in loopElements)
+        {
+            
             if(cp.Type == "Battery")
             {
                 Comp =  cp;
@@ -569,6 +647,18 @@ public class Loop
         {
             
         }
+    }
+
+    public float CalculateLoopResistor()
+    {
+        float Req = 0f;
+
+        foreach (CircuitComponent cp in loopElements)
+        {
+            Req += cp.Resistance;
+        }
+
+        return Req;
     }
 
 }

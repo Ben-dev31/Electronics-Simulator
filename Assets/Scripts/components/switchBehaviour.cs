@@ -22,8 +22,11 @@ public class switchBehaviour : MonoBehaviour
         cc.Resistance = 0f;
     }
 
-
     void OnMouseDown()
+    {
+        Switcher();
+    }
+    public void Switcher()
     {
         if(isOn)
         {
@@ -39,13 +42,20 @@ public class switchBehaviour : MonoBehaviour
                     component.Current = 0f;
                     component.Voltage = 0f;
                 }
-                
             }
             Borne[] Bornecomponents = FindObjectsOfType<Borne>();
             foreach (Borne item in Bornecomponents)
             {
                 item.ResetRange();
             }
+            Wire[] Wr = FindObjectsOfType<Wire>();
+            foreach (Wire w in Wr)
+            {
+                w.currentDirection = 0; 
+            }
+
+            RemoveElectrons();
+
             // Anim.SetTrigger("TrunOff");
         }
         else
@@ -53,6 +63,7 @@ public class switchBehaviour : MonoBehaviour
             isOn = true;
             circuitComponent.componentValue = 1;
             circuitComponent.CalculateCurrentsAndVoltages();
+            
             // Anim.SetTrigger("TrunOn");
         }
     }

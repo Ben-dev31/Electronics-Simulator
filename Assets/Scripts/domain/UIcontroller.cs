@@ -72,7 +72,8 @@ public class UIcontroller : MonoBehaviour
                 w.Desconnect();
                 Destroy(item);
             }
-            // GetComponent<Circuit>().CalculateCurrentsAndVoltages();
+            switchBehaviour switcher = FindObjectsOfType<switchBehaviour>()[0];
+            switcher.Switcher();
             
         }
         
@@ -100,7 +101,8 @@ public class UIcontroller : MonoBehaviour
         {
             foreach (Wire cable in Cables)
             {
-                cable.CreateElectron();
+                cable.ElectronCreating = true;
+                cable.ToggleView(1);
             }
         }
     }
@@ -113,6 +115,19 @@ public class UIcontroller : MonoBehaviour
             foreach (ElectronBezierMovement electron in Electrons)
             {
                 Destroy(electron.gameObject);
+                
+            }
+        }
+
+        Wire[] Cables = FindObjectsOfType<Wire>();
+
+        if(Cables.Length > 0)
+        {
+            foreach (Wire cable in Cables)
+            {
+                cable.ElectronCreating = false;
+                cable.ElectronLength = 0;
+                cable.ToggleView(-1);
             }
         }
     }

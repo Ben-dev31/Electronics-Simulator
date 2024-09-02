@@ -70,6 +70,7 @@
     <Compile Include="Assets/Scripts/components/bornes.cs" />
     <Compile Include="Assets/Scripts/components/switchBehaviour.cs" />
     <Compile Include="Assets/Scripts/components/IdManager.cs" />
+    <Compile Include="Assets/Scripts/components/wireManager.cs" />
     <Compile Include="Assets/Scripts/components/circuitManager.cs" />
     <Compile Include="Assets/Scripts/components/currentManager.cs" />
     <Compile Include="Assets/Scripts/components/node.cs" />
@@ -82,6 +83,7 @@
     <Compile Include="Assets/Scripts/components/circuitComponent.cs" />
     <Compile Include="Assets/Scripts/components/Selectable.cs" />
     <Compile Include="Assets/Scripts/components/connector.cs" />
+    <Compile Include="Assets/Scripts/domain/resourcesManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets/UI/uss/controlbnt.uss" />
